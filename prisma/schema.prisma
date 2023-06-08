@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum State {
+  PAID
+  UNPAID
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int?
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  role           Role      @default(USER)
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  favoriteIds    String[]
+
+  accounts Account[]
+  Cart     Cart[]
+}
+
+model Cart {
+  cartId String @id @default(cuid())
+  count  Int
+
+  guestName String
+  email     String
+  bornWhere String
+  birthday  String
+  phone     String
+  object    String?
+
+  User   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int?
+
+  classing   Classing? @relation(fields: [classingId], references: [classId], onDelete: Cascade)
+  classingId String?
+
+  state State @default(UNPAID)
+
+  totalPrice Int
+}
+
+model Classing {
+  classId String @id @default(cuid())
+
+  Schedule   Schedule  @relation(fields: [scheId], references: [scheId], onDelete: Cascade)
+  scheId     Int
+  courseId   String
+  Course     Course    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  Location   Location? @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+  locationId Int?
+
+  cart Cart[]
+}
+
+model Location {
+  locationId Int    @id @default(autoincrement())
+  name       String
+
+  classing Classing[]
+}
+
+model Course {
+  courseId    String   @id @unique @default(cuid())
+  title       String   @unique
+  description String
+  price       Int
+  imageSrc    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  level       String
+
+  cateId   String
+  category Category @relation(fields: [cateId], references: [cateId], onDelete: Cascade)
+
+  subjectRequired SubjectRequired[]
+
+  classing Classing[]
+}
+
+model SubjectRequired {
+  courseId   String
+  courseName String
+  course     Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  subId       Int
+  subjectName String
+  subject     Subject @relation(fields: [subId], references: [subId], onDelete: Cascade)
+
+  @@id([courseId, subId])
+}
+
+model Subject {
+  subId   Int    @id
+  nameSub String
+
+  SubjectRequired SubjectRequired[]
+}
+
+model Category {
+  cateId   String  @id @unique
+  nameCate String
+  image    String?
+
+  course Course[]
+}
+
+model Schedule {
+  scheId Int @id @default(autoincrement())
+
+  mtosId     Int?
+  mtoS       MtoS?     @relation(fields: [mtosId], references: [mtosId], onDelete: Cascade)
+  TimeSche   TimeSche? @relation(fields: [timeScheId], references: [timeScheId], onDelete: Cascade)
+  timeScheId Int?
+
+  classing Classing[]
+}
+
+model MtoS {
+  mtosId   Int    @id @default(autoincrement())
+  nameMtoS String
+
+  schedule Schedule[]
+}
+
+model TimeSche {
+  timeScheId Int    @id @default(autoincrement())
+  nameTime   String
+
+  schedule Schedule[]
+}
